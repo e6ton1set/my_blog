@@ -5,6 +5,8 @@ from .models import Post, Comment
 from django.views.generic import ListView
 from .forms import EmailPostForm, CommentForm
 from django.views.decorators.http import require_POST
+from taggit.models import Tag
+from django.db.models import Count
 
 
 @require_POST
@@ -71,8 +73,12 @@ class PostListView(ListView):
     template_name = 'blog_app/post/list.html'
 
 
-def post_list(request):
+def post_list(request, tag_slug=None):
     post_list = Post.published.all()
+    tag = None
+    if tag_slug:
+        tag = get_object_or_404(Tag, slug=tag_slug)
+        post_list = post_list.filter(tags__in=[tag])
     # постраничная разбивка с 3 постами на страницу
     paginator = Paginator(post_list, 3)
     page_number = request.GET.get('page', 1)
@@ -86,7 +92,8 @@ def post_list(request):
         posts = paginator.page(paginator.num_pages)
     return render(request,
                   'blog_app/post/list.html',
-                  {'posts': posts})
+                  {'posts': posts,
+                   'tag': tag})
 
 
 def post_detail(request, year, month, day, post):
@@ -107,8 +114,16 @@ def post_detail(request, year, month, day, post):
     # форма для комментирования пользователями
     form = CommentForm()
 
+    # cписок схожих постов
+    post_tags_ids = post.tags.values_list('id', flat=True)
+    similar_posts = Post.published.filter(tags__in=post_tags_ids) \
+                        .exclude(id=post.id)
+    similar_posts = similar_posts.annotate(same_tags=Count('tags')) \
+                        .order_by('-same_tags', '-publish')[:4]
+
     return render(request,
                   'blog_app/post/detail.html',
                   {'post': post,
                    'comments': comments,
-                   'form': form})
+                   'form': form,
+                   'similar_posts': similar_posts})
