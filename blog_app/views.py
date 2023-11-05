@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from django.http import Http404
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import Post
 from django.http import HttpResponse
 
@@ -9,21 +9,35 @@ def hello(request):
 
 
 def post_list(request):
-    posts = Post.published.all()
+    post_list = Post.published.all()
+    # постраничная разбивка с 3 постами на страницу
+    paginator = Paginator(post_list, 3)
+    page_number = request.GET.get('page', 1)
+    try:
+        posts = paginator.page(page_number)
+    except PageNotAnInteger:
+        # Если page_number не целое число, то выдать первую страницу
+        posts = paginator.page(1)
+    except EmptyPage:
+        # Если page_number находится вне диапазона, то выдать последнюю страницу
+        posts = paginator.page(paginator.num_pages)
     return render(request,
                   'blog_app/post/list.html',
                   {'posts': posts})
 
 
-def post_detail(request, id):
+def post_detail(request, year, month, day, post):
     # try:
     #     post = Post.published.get(id=id)
     # except Post.DoesNotExist:
     #     raise Http404("No post found.")
 
     post = get_object_or_404(Post,
-                             id=id,
-                             status=Post.Status.PUBLISHED)
+                             status=Post.Status.PUBLISHED,
+                             slug=post,
+                             publish__year=year,
+                             publish__month=month,
+                             publish__day=day)
 
     return render(request,
                   'blog_app/post/detail.html',
