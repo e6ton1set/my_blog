@@ -34,9 +34,9 @@ EMAIL_HOST_PASSWORD = 'woyc moos ibum bjbw'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
+SITE_ID = 1
 
-# Application definition
-
+# Определение приложения
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'blog_app.apps.BlogAppConfig',
     'taggit',
+    'django.contrib.sites',
+    'django.contrib.sitemaps',
 ]
 
 MIDDLEWARE = [
